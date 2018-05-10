@@ -26,6 +26,8 @@ public class RayTracingMaster : MonoBehaviour
 		public float radius;
 		public Vector3 albedo;
 		public Vector3 specular;
+		public float refraction;
+		public Vector3 refractionColor;
 	}
 
 	private void Awake()
@@ -73,6 +75,10 @@ public class RayTracingMaster : MonoBehaviour
 			bool metal = Random.value < 0.5f;
 			sphere.albedo = metal ? Vector4.zero : new Vector4(color.r, color.g, color.b);
 			sphere.specular = metal ? new Vector4(color.r, color.g, color.b) : new Vector4(0.04f, 0.04f, 0.04f);
+
+			Color refraction_color = Random.ColorHSV();
+			sphere.refractionColor = new Vector4(refraction_color.r, refraction_color.g, refraction_color.b);
+			sphere.refraction = Random.value;
 
 			// Add the sphere to the list
 			spheres.Add(sphere);

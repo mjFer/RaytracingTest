@@ -19,6 +19,8 @@ struct Sphere
 	float radius;
 	float3 albedo;
 	float3 specular;
+	float refraction;
+	float3 refractionColor;
 };
 
 StructuredBuffer<Sphere> _Spheres;
@@ -46,6 +48,8 @@ struct RayHit
 	float3 normal;
 	float3 albedo;
 	float3 specular;
+	float refraction;
+	float3 refractionColor;
 };
 
 RayHit CreateRayHit()
@@ -67,7 +71,9 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit)
 		bestHit.position = ray.origin + t * ray.direction;
 		bestHit.normal = float3(0.0f, 1.0f, 0.0f);
 		bestHit.albedo = 0.4f;
-		bestHit.specular = 0.5f;
+		bestHit.specular = 0.0f;
+		bestHit.refraction = 0.0f;
+		bestHit.refractionColor = float3(0.0f, 0.0f, 0.0f);
 	}
 }
 
@@ -90,6 +96,8 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere)
 		bestHit.normal = normalize(bestHit.position - sphere.position.xyz);
 		bestHit.albedo = sphere.albedo;
 		bestHit.specular = sphere.specular;
+		bestHit.refraction = sphere.refraction;
+		bestHit.refractionColor = sphere.refractionColor;
 	}
 }
 
@@ -104,6 +112,73 @@ RayHit Trace(Ray ray)
 		IntersectSphere(ray, bestHit, _Spheres[i]);
 	return bestHit;
 }
+
+
+void fresnel(float3 I, float3 N, float ior, inout float kr)
+{
+	float cosi = clamp(-1, 1, dot(I, N));
+	float etai = 1, etat = ior;
+	if (cosi > 0) {
+		float tmp = etai;
+		etai = etat;
+		etat = tmp;
+	}
+	// Compute sini using Snell's law
+	float sint = etai / etat * sqrt(max(0.f, 1 - cosi * cosi));
+	// Total internal reflection
+	if (sint >= 1) {
+		kr = 1;
+	}
+	else {
+		float cost = sqrt(max(0.f, 1 - sint * sint));
+		cosi = abs(cosi);
+		float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
+		float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
+		kr = (Rs * Rs + Rp * Rp) / 2;
+	}
+	// As a consequence of the conservation of energy, transmittance is given by:
+	// kt = 1 - kr;
+}
+
+
+//float3 ShadeV2(inout Ray ray, RayHit refl_hit, RayHit)
+//{
+//	if (hit.distance < 1.#INF)
+//	{
+//		int outside = dot(hit.normal, ray.direction) < 0;
+//
+//		float IOR = outside ? 1.1f : 1.0f / 1.1f;
+//		float kr;
+//		fresnel(ray.direction, hit.normal, IOR, kr)
+//
+//		ray.origin = outside ? hit.position - hit.normal * 0.001f : hit.position + hit.normal * 0.001f;
+//		ray.direction = refract(ray.direction, hit.normal, IOR);
+//
+//		if (!outside) {
+//			RayHit rh = Trace(ray);
+//			return Shade(ray, rh);
+//		}
+//
+//		//ray.energy *= hit.specular;
+//
+//		float3 refl_color = saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
+//		float3 refr_color = hit.albedo;
+//		hitColor += reflectionColor * kr + refractionColor * (1 - kr);
+//
+//		return refl_color * kr + refr_color * (1-kr);
+//	}
+//	else
+//	{
+//		// Erase the ray's energy - the sky doesn't reflect anything
+//		ray.energy = 0.0f;
+//		// Sample the skybox and write it
+//		float theta = acos(ray.direction.y) / -PI;
+//		float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
+//		return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz;
+//	}
+//}
+
+
 
 float3 Shade(inout Ray ray, RayHit hit)
 {
@@ -137,29 +212,30 @@ float3 Shade(inout Ray ray, RayHit hit)
 }
 
 
-float3 ShadeRef(inout Ray ray, RayHit hit)
+float3 ShadeRef(inout Ray ray, RayHit hit, float ior)
 {
 	if (hit.distance < 1.#INF)
 	{
 		// Reflect the ray and multiply energy with specular reflection
-		
 		int outside = dot(hit.normal, ray.direction) < 0;
 
-		float IOR = outside ? 1.1f : 1.0f/1.1f;
-		//float IOR2 = 0.9f;
+		if (outside) {
+			ior = 1.0f / ior;
+		}
+
 
 		ray.origin = outside ? hit.position - hit.normal * 0.001f : hit.position + hit.normal * 0.001f;
-		ray.direction = refract(ray.direction, hit.normal, IOR);
+		ray.direction = refract(ray.direction, hit.normal, ior);
 		
 		if (!outside) {
 			RayHit rh = Trace(ray);
 			return Shade(ray, rh);
 		}
 
-		//ray.energy *= hit.specular;
+		ray.energy *= hit.refraction;
 
 		// Return a diffuse-shaded color
-		return hit.albedo;// saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
+		return hit.refractionColor;// saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
 	}
 	else
 	{
@@ -195,29 +271,43 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 	// Transform pixel to [-1,1] range
 	float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
 	// Get a ray for the UVs
-	Ray ray = CreateCameraRay(uv);
+	Ray reflect_ray = CreateCameraRay(uv);
+	Ray refract_ray = CreateCameraRay(uv);
 
-	// Trace and shade
-	//RayHit hit;
-	//float3 result = float3(0, 0, 0);
-	//for (int i = 0; i < 8; i++)
-	//{
-	//	hit = Trace(ray);
-	//	result += ray.energy * Shade(ray, hit);
-	//	if (!any(ray.energy))
-	//		break;
-	//}
 
-	RayHit hit;
-	float3 result = float3(0, 0, 0);
-	for (int i = 0; i < 5; i++)
-	{
-		hit = Trace(ray);
-		result += ray.energy * ShadeRef(ray, hit);
-		if (!any(ray.energy))
+	RayHit reflect_hit;
+	RayHit refract_hit;
+	float3 reflect_result = float3(0, 0, 0);
+	float3 refract_result = float3(0, 0, 0);
+
+	float IOR = 1.2f;
+	float kr;
+	float refraction = 0;
+
+	reflect_hit = Trace(reflect_ray);
+	fresnel(reflect_ray.direction, reflect_hit.normal, IOR, kr);
+	
+	refraction = reflect_hit.refraction;
+
+	for (int i = 0; i < 5; i++){
+		//reflection part
+		reflect_result += reflect_ray.energy * Shade(reflect_ray, reflect_hit);
+		if (!any(reflect_ray.energy))
 			break;
+		reflect_hit = Trace(reflect_ray);
 	}
 
+	for (int i = 0; i < 5; i++){
+		//refraction part
+		refract_hit = Trace(refract_ray);
+		refract_result += refract_ray.energy * ShadeRef(refract_ray, refract_hit, IOR);
+		//if (!any(reflect_ray.energy))
+		//	break;
+	}
 
-	Result[id.xy] = float4(result, 1);
+	reflect_result = reflect_result * (1-refraction) + refraction * (reflect_result * kr + refract_result * (1 - kr));
+	//reflect_result = reflect_result * kr;
+
+
+	Result[id.xy] = float4(reflect_result, 1);
 }

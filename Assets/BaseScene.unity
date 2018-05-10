@@ -125,6 +125,7 @@ GameObject:
   - component: {fileID: 264376267}
   - component: {fileID: 264376266}
   - component: {fileID: 264376265}
+  - component: {fileID: 264376270}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -144,7 +145,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   RayTracingShader: {fileID: 7200000, guid: 9942a32cf3972de49b1c8e40940a695c, type: 3}
-  SkyboxTexture: {fileID: 2800000, guid: d411c17dc90df514b9ca8346f00081de, type: 3}
+  SkyboxTexture: {fileID: 2800000, guid: 7c3e3e20ebb190c4d92a77e95d317021, type: 3}
   DirectionalLight: {fileID: 1576373422}
   SphereRadius: {x: 3, y: 8}
   SpheresMax: 100
@@ -194,7 +195,7 @@ Camera:
   m_TargetEye: 3
   m_HDR: 1
   m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
+  m_AllowDynamicResolution: 1
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
@@ -212,6 +213,22 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 33, y: 0, z: 0}
+--- !u!114 &264376270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 264376264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9ab627dc0feec046976df4e3471b620, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {x: 0, y: 0, z: 0}
+  distance: 140
+  theta: 0.1
+  rotation: 0
+  rotSpeed: 0.1
 --- !u!1 &1576373421
 GameObject:
   m_ObjectHideFlags: 0

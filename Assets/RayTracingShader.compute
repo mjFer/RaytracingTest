@@ -136,6 +136,42 @@ float3 Shade(inout Ray ray, RayHit hit)
 	}
 }
 
+
+float3 ShadeRef(inout Ray ray, RayHit hit)
+{
+	if (hit.distance < 1.#INF)
+	{
+		// Reflect the ray and multiply energy with specular reflection
+		
+		int outside = dot(hit.normal, ray.direction) < 0;
+
+		float IOR = outside ? 1.1f : 1.0f/1.1f;
+		//float IOR2 = 0.9f;
+
+		ray.origin = outside ? hit.position - hit.normal * 0.001f : hit.position + hit.normal * 0.001f;
+		ray.direction = refract(ray.direction, hit.normal, IOR);
+		
+		if (!outside) {
+			RayHit rh = Trace(ray);
+			return Shade(ray, rh);
+		}
+
+		//ray.energy *= hit.specular;
+
+		// Return a diffuse-shaded color
+		return hit.albedo;// saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
+	}
+	else
+	{
+		// Erase the ray's energy - the sky doesn't reflect anything
+		ray.energy = 0.0f;
+		// Sample the skybox and write it
+		float theta = acos(ray.direction.y) / -PI;
+		float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
+		return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz;
+	}
+}
+
 Ray CreateCameraRay(float2 uv)
 {
 	// Transform the camera origin to world space
@@ -162,15 +198,26 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 	Ray ray = CreateCameraRay(uv);
 
 	// Trace and shade
+	//RayHit hit;
+	//float3 result = float3(0, 0, 0);
+	//for (int i = 0; i < 8; i++)
+	//{
+	//	hit = Trace(ray);
+	//	result += ray.energy * Shade(ray, hit);
+	//	if (!any(ray.energy))
+	//		break;
+	//}
+
 	RayHit hit;
 	float3 result = float3(0, 0, 0);
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		hit = Trace(ray);
-		result += ray.energy * Shade(ray, hit);
+		result += ray.energy * ShadeRef(ray, hit);
 		if (!any(ray.energy))
 			break;
 	}
+
 
 	Result[id.xy] = float4(result, 1);
 }

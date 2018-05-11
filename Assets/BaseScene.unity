@@ -226,9 +226,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {x: 0, y: 0, z: 0}
   distance: 140
-  theta: 0.1
+  theta: 0.2
   rotation: 0
-  rotSpeed: 0.1
+  rotSpeed: -0.2
 --- !u!1 &1576373421
 GameObject:
   m_ObjectHideFlags: 0

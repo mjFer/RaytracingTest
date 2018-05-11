@@ -1,0 +1,6 @@
+Implementación básica de raytracing usando computeshaders en unity3d
+
+Todavia estoy haciendo experimentos en el código por lo que no es estable
+
+Basado en el tutorial de David Kuri: http://blog.three-eyed-games.com/2018/05/03/gpu-ray-tracing-in-unity-part-1/
+y algunos conceptos tomados de https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel

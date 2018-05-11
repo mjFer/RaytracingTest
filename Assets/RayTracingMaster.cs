@@ -48,43 +48,88 @@ public class RayTracingMaster : MonoBehaviour
 	}
 
 
+	//private void SetUpScene()
+	//{
+	//	List<Sphere> spheres = new List<Sphere>();
+
+	//	// Add a number of random spheres
+	//	for (int i = 0; i < SpheresMax; i++)
+	//	{
+	//		Sphere sphere = new Sphere();
+
+	//		// Radius and radius
+	//		sphere.radius = SphereRadius.x + Random.value * (SphereRadius.y - SphereRadius.x);
+	//		Vector2 randomPos = Random.insideUnitCircle * SpherePlacementRadius;
+	//		sphere.position = new Vector3(randomPos.x, sphere.radius, randomPos.y);
+
+	//		// Reject spheres that are intersecting others
+	//		foreach (Sphere other in spheres)
+	//		{
+	//			float minDist = sphere.radius + other.radius;
+	//			if (Vector3.SqrMagnitude(sphere.position - other.position) < minDist * minDist)
+	//				goto SkipSphere;
+	//		}
+
+	//		// Albedo and specular color
+	//		Color color = Random.ColorHSV();
+	//		bool metal = Random.value < 0.5f;
+	//		sphere.albedo = metal ? Vector4.zero : new Vector4(color.r, color.g, color.b);
+	//		sphere.specular = metal ? new Vector4(color.r, color.g, color.b) : new Vector4(0.04f, 0.04f, 0.04f);
+
+	//		Color refraction_color = Random.ColorHSV();
+	//		sphere.refractionColor = new Vector4(refraction_color.r, refraction_color.g, refraction_color.b);
+	//		sphere.refraction = Random.value;
+
+	//		// Add the sphere to the list
+	//		spheres.Add(sphere);
+
+	//	SkipSphere:
+	//		continue;
+	//	}
+
+	//	// Assign to compute buffer
+	//	if (_sphereBuffer != null)
+	//		_sphereBuffer.Release();
+	//	if (spheres.Count > 0)
+	//	{
+	//		_sphereBuffer = new ComputeBuffer(spheres.Count, 40);
+	//		_sphereBuffer.SetData(spheres);
+	//	}
+	//}
+
+
 	private void SetUpScene()
 	{
 		List<Sphere> spheres = new List<Sphere>();
 
+		Color color = Color.red;//Random.ColorHSV();
+		Color refraction_color = Color.blue;//Random.ColorHSV();
+		int sep = 15;
+
 		// Add a number of random spheres
-		for (int i = 0; i < SpheresMax; i++)
+		int i = 1;
+		int j = 1;
+		for (i = -3; i < 3; i++)
 		{
-			Sphere sphere = new Sphere();
-
-			// Radius and radius
-			sphere.radius = SphereRadius.x + Random.value * (SphereRadius.y - SphereRadius.x);
-			Vector2 randomPos = Random.insideUnitCircle * SpherePlacementRadius;
-			sphere.position = new Vector3(randomPos.x, sphere.radius, randomPos.y);
-
-			// Reject spheres that are intersecting others
-			foreach (Sphere other in spheres)
+			for (j = -3; j < 4; j++)
 			{
-				float minDist = sphere.radius + other.radius;
-				if (Vector3.SqrMagnitude(sphere.position - other.position) < minDist * minDist)
-					goto SkipSphere;
+				Sphere sphere = new Sphere();
+
+				// Radius and radius
+				sphere.radius = 10;
+				sphere.position = new Vector3(i * (sphere.radius + sep), sphere.radius + 0.5f, j * (sphere.radius + sep));
+
+				// Albedo and specular color				
+				sphere.albedo = new Vector4(color.r, color.g, color.b);
+				sphere.specular = new Vector4( 1,1,1) * (i+3.0f)/6.0f;
+
+				sphere.refractionColor = new Vector4(refraction_color.r, refraction_color.g, refraction_color.b);
+				sphere.refraction = (j + 3.0f) / 6.0f;
+
+				// Add the sphere to the list
+				spheres.Add(sphere);
+			
 			}
-
-			// Albedo and specular color
-			Color color = Random.ColorHSV();
-			bool metal = Random.value < 0.5f;
-			sphere.albedo = metal ? Vector4.zero : new Vector4(color.r, color.g, color.b);
-			sphere.specular = metal ? new Vector4(color.r, color.g, color.b) : new Vector4(0.04f, 0.04f, 0.04f);
-
-			Color refraction_color = Random.ColorHSV();
-			sphere.refractionColor = new Vector4(refraction_color.r, refraction_color.g, refraction_color.b);
-			sphere.refraction = Random.value;
-
-			// Add the sphere to the list
-			spheres.Add(sphere);
-
-		SkipSphere:
-			continue;
 		}
 
 		// Assign to compute buffer
@@ -92,11 +137,10 @@ public class RayTracingMaster : MonoBehaviour
 			_sphereBuffer.Release();
 		if (spheres.Count > 0)
 		{
-			_sphereBuffer = new ComputeBuffer(spheres.Count, 40);
+			_sphereBuffer = new ComputeBuffer(spheres.Count, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Sphere)));
 			_sphereBuffer.SetData(spheres);
 		}
 	}
-
 
 	private void SetShaderParameters(){
 		RayTracingShader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);

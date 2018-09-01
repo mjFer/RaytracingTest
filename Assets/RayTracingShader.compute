@@ -266,6 +266,7 @@ Ray CreateCameraRay(float2 uv)
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
+	int i;
 	// Get the dimensions of the RenderTexture
 	uint width, height;
 	Result.GetDimensions(width, height);
@@ -290,7 +291,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 	
 	refraction = reflect_hit.refraction;
 
-	for (int i = 0; i < 10; i++){
+	for (i = 0; i < 10; i++){
 		//reflection part
 		reflect_result += reflect_ray.energy * Shade(reflect_ray, reflect_hit);
 		if (!any(reflect_ray.energy))
@@ -298,16 +299,20 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 		reflect_hit = Trace(reflect_ray);
 	}
 
-	for (int i = 0; i < 10; i++){
-		//refraction part
-		refract_hit = Trace(refract_ray);
-		refract_result += refract_ray.energy * ShadeRef(refract_ray, refract_hit, IOR);
-		//if (!any(reflect_ray.energy))
-		//	break;
+	if (kr < 1) {
+		for (i = 0; i < 10; i++) {
+			//refraction part
+			refract_hit = Trace(refract_ray);
+			refract_result += refract_ray.energy * ShadeRef(refract_ray, refract_hit, IOR);
+			//if (!any(reflect_ray.energy))
+			//	break;
+		}
 	}
 
 	reflect_result = reflect_result * (1-refraction) + refraction * (reflect_result * kr + refract_result * (1 - kr));
 	//reflect_result = reflect_result * kr;
+
+	//reflect_result = reflect_result * kr  +  refract_result * (1-kr);
 
 
 	Result[id.xy] = float4(reflect_result, 1);

@@ -102,8 +102,8 @@ public class RayTracingMaster : MonoBehaviour
 	{
 		List<Sphere> spheres = new List<Sphere>();
 
-		Color color = Color.red;//Random.ColorHSV();
-		Color refraction_color = Color.blue;//Random.ColorHSV();
+		Color color = Color.white;//Random.ColorHSV();
+		Color refraction_color = Color.white;//Random.ColorHSV();
 		int sep = 15;
 
 		// Add a number of random spheres

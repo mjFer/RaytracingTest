@@ -1,6 +1,18 @@
-Implementación básica de raytracing usando computeshaders en unity3d
 
-Todavia estoy haciendo experimentos en el código por lo que no es estable
+# Simple Unreal Raytracing Shader Test
 
-Basado en el tutorial de David Kuri: http://blog.three-eyed-games.com/2018/05/03/gpu-ray-tracing-in-unity-part-1/
-y algunos conceptos tomados de https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
+This is a very basic implementation of raytracing concepts using compute shaders in unity3d
+
+
+## Example Images of the project
+
+![Refractions and Reflections](https://github.com/mjFer/RaytracingTest/blob/master/img/test1.jpg)
+
+![Refractions and Reflections](https://github.com/mjFer/RaytracingTest/blob/master/img/test2.jpg)
+
+
+
+Recommended blogs to start in the topic:
+http://blog.three-eyed-games.com/2018/05/03/gpu-ray-tracing-in-unity-part-1/
+https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
+
